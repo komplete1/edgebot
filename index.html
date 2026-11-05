@@ -1,0 +1,64 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>EDGE//BOT live</title>
+<script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
+<style>
+:root{--bg:#05060a;--card:rgba(18,22,34,.72);--line:rgba(120,140,255,.18);--g:#00ffa3;--r:#ff3b6b;--a:#7c5cff;--c:#22d3ee;--t:#e6e9f5;--m:#8a93b2}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(1200px 600px at 10% -10%,#1b1450 0,transparent 60%),radial-gradient(900px 500px at 110% 10%,#003b4a 0,transparent 55%),var(--bg);color:var(--t);font:14px/1.4 Inter,system-ui,-apple-system,sans-serif;min-height:100vh}
+header{display:flex;align-items:center;justify-content:space-between;padding:18px 22px;border-bottom:1px solid var(--line);position:sticky;top:0;backdrop-filter:blur(14px);background:rgba(5,6,10,.6);z-index:5}
+.logo{font-weight:900;letter-spacing:.18em;font-size:18px;background:linear-gradient(90deg,var(--c),var(--a),var(--g));-webkit-background-clip:text;color:transparent}
+.live{font-size:12px;color:var(--m)}.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--g);box-shadow:0 0 12px var(--g);margin-right:6px;animation:p 1.4s infinite}@keyframes p{50%{opacity:.25}}
+main{padding:18px;display:grid;gap:16px;grid-template-columns:repeat(12,1fr);max-width:1500px;margin:auto}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;box-shadow:0 0 40px rgba(124,92,255,.07) inset}
+.card h2{margin:0 0 12px;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--m)}
+.s12{grid-column:span 12}.s8{grid-column:span 8}.s4{grid-column:span 4}.s6{grid-column:span 6}
+@media(max-width:900px){.s8,.s4,.s6{grid-column:span 12}}
+.tick{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.tk{padding:12px;border-radius:12px;background:rgba(255,255,255,.03);border:1px solid var(--line);cursor:pointer;transition:.2s}.tk:hover,.tk.on{border-color:var(--a);box-shadow:0 0 18px rgba(124,92,255,.35)}
+.tk b{font-size:12px;color:var(--m)}.px{font:700 20px ui-monospace,Menlo,monospace;transition:color .4s}.up{color:var(--g)}.dn{color:var(--r)}.fl-u{text-shadow:0 0 14px var(--g)}.fl-d{text-shadow:0 0 14px var(--r)}
+#chart{height:380px}.tabs button{background:none;border:1px solid var(--line);color:var(--m);border-radius:8px;padding:4px 10px;margin-left:4px;cursor:pointer}.tabs button.on{color:var(--t);border-color:var(--c)}
+.big{font:800 30px ui-monospace,monospace}.kv{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px dashed var(--line)}
+table{width:100%;border-collapse:collapse;font-size:12px}td,th{padding:6px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}th{color:var(--m);font-weight:500}
+.hm{display:grid;gap:3px}.cell{border-radius:5px;padding:5px 4px;font:600 11px ui-monospace,monospace;text-align:center;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.meet{margin-bottom:14px}.meet h3{margin:0 0 6px;font-size:13px}.tag{font-size:10px;padding:2px 7px;border-radius:99px;border:1px solid var(--line);color:var(--m)}
+.k{color:var(--r)}.w{color:#ffcc4d}.ok{color:var(--g)}footer{color:var(--m);text-align:center;font-size:11px;padding:20px}
+</style></head><body>
+<header><div class="logo">EDGE//BOT</div><div class="live"><span class="dot"></span><span id="clk">connecting…</span> · REPORT-ONLY · no trading</div></header>
+<main>
+<section class="card s12"><h2>Hyperliquid perps · live</h2><div class="tick" id="tick"></div></section>
+<section class="card s8"><h2 style="display:flex;justify-content:space-between">Candles <span id="sym">BTC</span><span class="tabs"><button data-i="5m">5m</button><button data-i="15m" class="on">15m</button><button data-i="1h">1h</button><button data-i="4h">4h</button></span></h2><div id="chart"></div></section>
+<section class="card s4"><h2>Paper bot</h2><div class="big" id="bal">–</div><div id="pst" class="live"></div><canvas id="eq" height="90" style="width:100%;margin-top:10px"></canvas>
+<h2 style="margin-top:16px">Track record</h2><div id="cal"></div><h2 style="margin-top:16px">Fear &amp; Greed</h2><div class="big" id="fng">–</div></section>
+<section class="card s12"><h2>Racing odds heatmap · today <span id="rdate"></span></h2><div id="heat"></div></section>
+<section class="card s6"><h2>Crypto rule state</h2><div id="rules"></div></section>
+<section class="card s6"><h2>Edge ledger</h2><div id="ledger" style="max-height:520px;overflow:auto"></div></section>
+</main><footer>Prices: Hyperliquid public API, client-side, every 3s · Stats: <span id="upd"></span> · Not advice, no bets placed</footer>
+<script>
+const HL='https://api.hyperliquid.xyz/info',COINS=['BTC','ETH','SOL','HYPE','XRP','DOGE'];let sym='BTC',iv='15m',last={},chart,series;
+const post=b=>fetch(HL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)}).then(r=>r.json());
+const f=(x,d=2)=>x==null?'–':(+x).toLocaleString(undefined,{maximumFractionDigits:d,minimumFractionDigits:Math.min(d,2)});
+const dp=p=>p>1000?1:p>10?2:p>1?3:5;
+function initChart(){chart=LightweightCharts.createChart(document.getElementById('chart'),{layout:{background:{color:'transparent'},textColor:'#8a93b2'},grid:{vertLines:{color:'rgba(120,140,255,.06)'},horzLines:{color:'rgba(120,140,255,.06)'}},timeScale:{timeVisible:true,borderColor:'rgba(120,140,255,.2)'},rightPriceScale:{borderColor:'rgba(120,140,255,.2)'},crosshair:{mode:0}});
+series=chart.addCandlestickSeries({upColor:'#00ffa3',downColor:'#ff3b6b',borderVisible:false,wickUpColor:'#00ffa3',wickDownColor:'#ff3b6b'});new ResizeObserver(()=>chart.applyOptions({width:document.getElementById('chart').clientWidth})).observe(document.getElementById('chart'))}
+const IVMS={'5m':3e5,'15m':9e5,'1h':36e5,'4h':144e5};
+async function loadCandles(){const now=Date.now();const c=await post({type:'candleSnapshot',req:{coin:sym,interval:iv,startTime:now-IVMS[iv]*300,endTime:now}});series.setData(c.map(k=>({time:k.t/1000,open:+k.o,high:+k.h,low:+k.l,close:+k.c})));document.getElementById('sym').textContent=sym+'-PERP'}
+async function tick(){try{const [meta,ctx]=await post({type:'metaAndAssetCtxs'});const T=document.getElementById('tick');let h='';
+COINS.forEach(c=>{const i=meta.universe.findIndex(u=>u.name===c);if(i<0)return;const a=ctx[i],p=+a.markPx,ch=(p/+a.prevDayPx-1)*100,fl=last[c]==null?'':p>last[c]?'fl-u':p<last[c]?'fl-d':'';last[c]=p;
+h+=`<div class="tk ${c===sym?'on':''}" onclick="sym='${c}';loadCandles();tick()"><b>${c}</b><div class="px ${ch>=0?'up':'dn'} ${fl}">$${f(p,dp(p))}</div><div class="${ch>=0?'up':'dn'}">${ch>=0?'▲':'▼'} ${f(ch)}%</div><div class="live">fund ${f(+a.funding*24*365*100,1)}%/yr · OI $${f(+a.openInterest*p/1e6,0)}M</div></div>`});T.innerHTML=h;
+const p=last[sym],d=series.data?null:null;const bars=series.data();if(bars.length){const b=bars[bars.length-1];series.update({...b,close:p,high:Math.max(b.high,p),low:Math.min(b.low,p)})}
+document.getElementById('clk').textContent='live '+new Date().toLocaleTimeString()}catch(e){document.getElementById('clk').textContent='HL reconnecting…'}}
+function heat(v){if(v==null)return'rgba(255,255,255,.04)';const x=Math.max(-1,Math.min(1,v/30));return x>=0?`rgba(0,255,163,${.12+x*.6})`:`rgba(255,59,107,${.12-x*.6})`}
+function render(D){const s=D.static||{};document.getElementById('upd').textContent='updated '+new Date(D.now*1000).toLocaleString('en-AU',{timeZone:'Australia/Melbourne'})+' AEDT';
+const P=s.paper||{};document.getElementById('bal').innerHTML='$'+f(P.bal)+` <span class="${P.bal>=P.start?'up':'dn'}" style="font-size:14px">${f((P.bal/P.start-1)*100)}%</span>`;document.getElementById('pst').textContent=P.status||'';
+const eq=(P.eq||[]).map(e=>e[1]),cv=document.getElementById('eq'),g=cv.getContext('2d');cv.width=cv.clientWidth*2;cv.height=180;if(eq.length){const mn=Math.min(...eq)-1,mx=Math.max(...eq)+1;g.strokeStyle='#22d3ee';g.lineWidth=3;g.shadowColor='#22d3ee';g.shadowBlur=12;g.beginPath();eq.forEach((v,i)=>{const x=i/(eq.length-1||1)*cv.width,y=cv.height-(v-mn)/(mx-mn)*cv.height;i?g.lineTo(x,y):g.moveTo(x,y)});g.stroke()}
+const c=(s.cal||{}).racing||{};document.getElementById('cal').innerHTML=`<div class="kv"><span>Racing tips</span><b>${c.n??0}</b></div><div class="kv"><span>P&amp;L (units)</span><b class="${c.pnl_sum>=0?'up':'dn'}">${c.pnl_sum>=0?'+':''}${f(c.pnl_sum,1)}</b></div><div class="kv"><span>Brier (coinflip .25)</span><b>${f(c.brier,3)}</b></div><div class="kv"><span>Hit rate</span><b>${f((c.hit||0)*100,0)}%</b></div><div class="kv"><span>Runners in DB</span><b>${f(+s.runners,0)}</b></div>`;
+if(D.fng)document.getElementById('fng').innerHTML=`${D.fng.now} <span style="font-size:14px;color:var(--m)">${D.fng.label}</span>`;
+const R=D.racing||{};document.getElementById('rdate').textContent=R.date||'';let H='';(R.meets||[]).forEach(m=>{H+=`<div class="meet"><h3>${m.name} <span class="tag">${m.state}</span> <span class="tag">${m.tc||''}</span> <span class="tag">${m.wx||''}</span></h3>`;
+(m.races||[]).forEach((r,ri)=>{const run=(r.run||[]).slice().sort((a,b)=>(a.px||99)-(b.px||99));H+=`<div class="hm" style="grid-template-columns:70px repeat(${Math.max(run.length,1)},minmax(54px,1fr));margin-bottom:3px"><div class="cell" style="background:none;color:var(--m)">R${r.n??ri+1} ${r.start?new Date(r.start*1000).toLocaleTimeString('en-AU',{timeZone:'Australia/Melbourne',hour:'2-digit',minute:'2-digit'}):''}</div>`+run.map(x=>`<div class="cell" title="${x.h} · $${x.px} (open $${x.op}) · move ${f(x.mv,1)}% · model edge ${x.edge==-100?'n/a':f(x.edge,1)+'%'}" style="background:${heat(x.edge==-100?(x.mv!=null?-x.mv:null):x.edge)}">$${x.px??'–'}<br><span style="opacity:.7;font-weight:400">${(x.h||'').slice(0,9)}</span></div>`).join('')+'</div>'});H+='</div>'});
+document.getElementById('heat').innerHTML=H||'<div class="live">No meetings in latest push.</div>';
+const ru=D.rules||{};let rh='<table><tr><th>Coin</th><th>Px</th><th>Trend</th><th>OI 24h</th><th>Fund/yr</th></tr>';Object.entries(ru.snap||{}).forEach(([k,v])=>rh+=`<tr><td><b>${k}</b></td><td>${f(v.px,dp(v.px))}</td><td class="${v.trend=='bull'?'up':'dn'}">${v.trend||'–'}</td><td>${f(v.oi24,1)}%</td><td>${f(v.fund_ann,1)}%</td></tr>`);rh+='</table><h2 style="margin-top:14px">Rules</h2><table>';
+Object.entries(ru.rules||{}).forEach(([k,v])=>rh+=`<tr><td>${k}</td><td class="${/kill/i.test(v.status)?'k':/live|active/i.test(v.status)?'ok':'w'}">${v.status||''}</td><td>${v.side||''} ${v.h||''}</td></tr>`);document.getElementById('rules').innerHTML=rh+'</table>'+((ru.fired||[]).length?'<p class="ok">FIRED: '+ru.fired.join(', ')+'</p>':'<p class="live">No rules firing.</p>');
+let lh='<table><tr><th>Edge</th><th>Verdict</th></tr>';(s.ledger||[]).slice().reverse().forEach(e=>lh+=`<tr><td><span class="tag">${e.domain}</span> ${e.edge}<div class="live">${e.result||''}</div></td><td class="${/kill/i.test(e.verdict)?'k':/watch/i.test(e.verdict)?'w':'ok'}">${e.verdict||''}</td></tr>`);document.getElementById('ledger').innerHTML=lh+'</table>'}
+async function data(){try{render(await (await fetch('data.json?'+Date.now())).json())}catch(e){}}
+document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('on'));b.classList.add('on');iv=b.dataset.i;loadCandles()});
+initChart();loadCandles().then(tick);setInterval(tick,3000);setInterval(loadCandles,60000);data();setInterval(data,120000);
+</script></body></html>
