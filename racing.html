@@ -84,9 +84,10 @@ function races(){const B=D.board||{};let R=(B.races||[]);const now=Date.now()/10
   <div class="pick"><span class="nm">${r.horse}</span><span class="pr">$${f(r.taken||r.price)}</span></div>
   <div><span class="cf ${cc}">${cl}</span>${vb}<span class="meta">${plain(r.why)}</span></div>${val}
   ${res?`<div class="rs ${res.won?'up':'dn'}">${res.won?'WON':'LOST'} ${pl>=0?'+':'-'}$${Math.abs(pl)}${res.won?'':` <span class="meta" style="font-weight:400">· won by ${res.winner}</span>`}</div>`:''}</div>`}).join('')}
-function top3(){const B=(D.board||{}).races||[];const bd=(D.board||{}).date||'';const done=B.filter(r=>r.result&&r.locked);const td=done.reduce((a,r)=>a+pnlOf(r),0);const b0=D.baseline;
- const prev=(b0.series||[]).filter(x=>x[0]<bd);const pp=prev.length?prev[prev.length-1][2]:0;const pw=prev.filter((x,i)=>x[2]>(i?prev[i-1][2]:0)).length;
- const n=prev.length+done.length,w=pw+done.filter(r=>r.result.won).length;const b={pnl:pp+td,strike:n?w/n:null,n:n,wins:w,bets_needed:b0.bets_needed};
+function top3(){const B=(D.board||{}).races||[];const md=x=>new Date(x*1000).toLocaleDateString('en-CA',{timeZone:'Australia/Melbourne'});const tdy=md(Date.now()/1000);
+ const L=B.filter(r=>r.result&&r.locked);const done=L.filter(r=>md(r.start)==tdy);const td=done.reduce((a,r)=>a+pnlOf(r),0);const b0=D.baseline;
+ const ug=L.filter(r=>!r.graded);const n=b0.n+ug.length,w=b0.wins+ug.filter(r=>r.result.won).length;
+ const b={pnl:b0.pnl+ug.reduce((a,r)=>a+pnlOf(r),0),strike:n?w/n:null,n:n,wins:w,bets_needed:b0.bets_needed};
  const m=x=>(x>=0?'+$':'-$')+Math.abs(Math.round(x)).toLocaleString();
  $('#b_today').innerHTML=done.length?`<span class="${td>=0?'up':'dn'}">${m(td)}</span>`:'–';$('#b_all').innerHTML=`<span class="${b.pnl>=0?'up':'dn'}">${m(b.pnl)}</span>`;$('#b_wr').textContent=b.strike==null?'–':Math.round(b.strike*100)+'%';
  const need=Math.max(0,b.bets_needed-b.n);
