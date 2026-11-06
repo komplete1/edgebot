@@ -1,0 +1,102 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Nose Tracker · Edge Bot</title><meta name="theme-color" content="#0b0d12">
+<style>
+:root{--bg:#0b0d12;--card:#141821;--line:#232a36;--txt:#e8ecf3;--mut:#8b95a7;--up:#2fd18b;--dn:#ff5d6c;--acc:#7aa2ff;--gold:#ffc857}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--txt);font:15px/1.4 -apple-system,BlinkMacSystemFont,"Inter","Segoe UI",Roboto,sans-serif}
+.wrap{max-width:980px;margin:0 auto;padding:14px}
+header{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:4px 0 14px}
+h1{font-size:20px;margin:0;letter-spacing:-.3px}h1 span{color:var(--acc)}
+.pill{font-size:11px;padding:3px 8px;border-radius:99px;border:1px solid var(--line);color:var(--mut);white-space:nowrap}
+.pill.live{color:var(--up);border-color:#1f5c43}.pill.gold{color:var(--gold);border-color:#6b5520}.pill.red{color:var(--dn);border-color:#6b2730}
+nav a{color:var(--mut);font-size:13px;text-decoration:none;margin-left:10px}
+h2{font-size:13px;text-transform:uppercase;letter-spacing:.8px;color:var(--mut);margin:22px 0 8px;font-weight:600}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px}
+.race{display:grid;grid-template-columns:64px 1fr auto;gap:10px;align-items:center;padding:11px 12px;border-bottom:1px solid var(--line)}
+.race:last-child{border-bottom:0}.race.done{opacity:.62}
+.t{font-variant-numeric:tabular-nums;font-weight:700;font-size:14px}.t small{display:block;color:var(--mut);font-weight:400;font-size:11px}
+.horse{font-weight:700;font-size:15px}.meta{color:var(--mut);font-size:12px}.why{color:var(--mut);font-size:11.5px;margin-top:2px}
+.px{text-align:right;font-variant-numeric:tabular-nums}.px b{font-size:16px}.px div{font-size:11px;color:var(--mut)}
+.badge{display:inline-block;font-size:10.5px;font-weight:700;padding:2px 6px;border-radius:6px;margin-left:4px;vertical-align:2px}
+.ov{background:#123a2a;color:var(--up)}.W{background:#123a2a;color:var(--up)}.L{background:#3a1820;color:var(--dn)}.hi{background:#1c2a4d;color:var(--acc)}.md{background:#2a2a1c;color:var(--gold)}.lo{background:#262a33;color:var(--mut)}
+.tip{font-size:11px;color:var(--gold);margin-top:2px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.stat .k{color:var(--mut);font-size:12px}.stat .v{font-size:22px;font-weight:700;font-variant-numeric:tabular-nums;margin-top:2px}.stat .s{color:var(--mut);font-size:11.5px}
+.up{color:var(--up)}.dn{color:var(--dn)}
+.i{display:inline-block;width:15px;height:15px;line-height:15px;text-align:center;border-radius:50%;background:#262d3a;color:var(--mut);font-size:10px;cursor:help;margin-left:4px;position:relative;font-style:normal}
+.i:hover::after,.i.on::after{content:attr(data-t);position:absolute;left:50%;top:20px;transform:translateX(-50%);width:230px;background:#1d2330;border:1px solid var(--line);color:var(--txt);padding:8px;border-radius:8px;font-size:12px;line-height:1.35;z-index:9;text-align:left;font-weight:400;text-transform:none;letter-spacing:0}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}@media(max-width:700px){.two{grid-template-columns:1fr}.race{grid-template-columns:54px 1fr auto}}
+table{width:100%;border-collapse:collapse;font-size:13px}td,th{padding:6px 4px;border-bottom:1px solid var(--line);text-align:left}th{color:var(--mut);font-weight:500;font-size:11.5px}td.n{text-align:right;font-variant-numeric:tabular-nums}
+.bar{height:6px;border-radius:3px;background:#232a36;overflow:hidden}.bar>i{display:block;height:100%;background:var(--acc)}
+svg text{fill:var(--mut);font-size:10px}.foot{color:var(--mut);font-size:11.5px;margin:26px 0 30px;line-height:1.5}
+.seg{display:flex;gap:6px;margin:0 0 8px}.seg button{background:var(--card);border:1px solid var(--line);color:var(--mut);border-radius:99px;padding:5px 11px;font-size:12px}.seg button.a{color:var(--txt);border-color:var(--acc)}
+.flag{font-size:12px;color:var(--gold);padding:6px 0}
+</style></head><body><div class="wrap">
+<header><h1>Nose <span>Tracker</span></h1><div><span class="pill gold">IMAGINARY $100 · NO REAL BETS</span> <span id="live" class="pill">loading</span><nav style="display:inline"><a href="https://komplete1.github.io/edgebot/">Crypto dash</a></nav></div></header>
+<div id="err"></div>
+<h2>Races <span id="bdate"></span><i class="i" data-t="Every main-meeting race in Australia. Our pick to win (the nose), current price, and the fair price our model thinks it should be. Overlay = the price is at least 5% better than fair even after an 8% commission haircut.">?</i></h2>
+<div class="seg" id="seg"><button data-f="up" class="a">Upcoming</button><button data-f="all">All</button><button data-f="ov">Overlays</button><button data-f="done">Results</button></div>
+<div id="flags"></div><div class="card" style="padding:0" id="races"></div>
+<h2>Headline edge test: do we beat the closing price?<i class="i" data-t="Closing line value: did we take a better price than the final price just before the jump? Beating the close consistently is the fastest proof of a real edge, way faster than profit.">?</i></h2><div class="card" id="clv"></div>
+<h2>Scoreboard<i class="i" data-t="Two separate imaginary tallies. Nose: $100 on our pick in every race. Value: $100 only when a horse's price beats our fair odds.">?</i></h2>
+<div class="two" id="tallies"></div>
+<h2>Running P&amp;L</h2><div class="card"><svg id="pnl" viewBox="0 0 600 180" width="100%" height="180"></svg></div>
+<h2>Is it real yet?</h2><div class="grid" id="proof"></div>
+<div class="two" style="margin-top:10px">
+<div class="card"><div class="k meta">Calibration: <span id="calsrc">market</span><i class="i" data-t="When the market says a horse has a 30% chance, does it actually win 30%? Dots above the line = wins more than its price says. Roughies win less than they should (long-shot bias).">?</i></div><svg id="cal" viewBox="0 0 300 220" width="100%"></svg></div>
+<div class="card"><div class="k meta">Fav ROI by state<i class="i" data-t="Return from backing the favourite in every race, split by state. Green = made money historically. Sample sizes are small, so treat as noise until n>1000.">?</i></div><div id="heat" style="margin-top:8px"></div><div class="k meta" style="margin-top:12px">Our picks: predicted vs actual<i class="i" data-t="Our own picks grouped by how likely we said they were to win, vs how often they actually won.">?</i></div><div id="ourcal"></div></div></div>
+<h2>X tipsters, graded<i class="i" data-t="Only tipsters who post checkable tips. Every tip graded against official results at $100 level stakes. Small samples = not proven.">?</i></h2><div class="card" id="tips"></div>
+<h2>5-year history test<i class="i" data-t="Every strategy tested on ~114,000 Aussie races (2020–2026, Betfair data) after commission. Bootstrap 95% range: if the whole range is above 0, it's a real edge.">?</i></h2><div class="card" id="hist"></div>
+<div class="foot" id="foot"></div>
+</div>
+<script>
+const $=s=>document.querySelector(s),f=(x,d=2)=>x==null||isNaN(x)?'–':(+x).toFixed(d),pc=(x,d=1)=>x==null?'–':((x>0?'+':'')+(x*100).toFixed(d)+'%'),mo=x=>x==null?'–':(x<0?'-$':'+$')+Math.abs(x).toLocaleString(undefined,{maximumFractionDigits:0});
+let D=null,F='up';
+document.addEventListener('click',e=>{if(e.target.classList.contains('i')){e.target.classList.toggle('on')}if(e.target.dataset.f){F=e.target.dataset.f;document.querySelectorAll('#seg button').forEach(b=>b.classList.toggle('a',b.dataset.f==F));races()}});
+function cd(s){if(!s)return'';const d=s-Date.now()/1000;if(d<-60)return'jumped';if(d<60)return'now';const m=Math.round(d/60);return m<60?m+'m':Math.floor(m/60)+'h '+(m%60)+'m'}
+function hm(s){return s?new Date(s*1000).toLocaleTimeString('en-AU',{hour:'numeric',minute:'2-digit',timeZone:'Australia/Melbourne'}):''}
+function races(){const B=D.board||{};let R=(B.races||[]);const now=Date.now()/1000;
+ if(F=='up')R=R.filter(r=>!r.result&&(!r.start||r.start>now-120));if(F=='ov')R=R.filter(r=>r.overlay||r.value);if(F=='done')R=R.filter(r=>r.result);
+ $('#bdate').textContent=B.date?'· '+new Date(B.date+'T12:00:00').toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'short'}):'';
+ if(!R.length){$('#races').innerHTML=`<div class="race"><div></div><div class="meta">${(B.races||[]).length?'Nothing here. Try All.':'No card loaded yet. Picks land around 7:30am.'}</div><div></div></div>`;return}
+ $('#races').innerHTML=R.map(r=>{const res=r.result;const ov=r.overlay?`<span class="badge ov" title="Price beats fair odds after commission">OVERLAY ${pc(r.overlay_pct,0)}</span>`:'';
+  const cf=`<span class="badge ${r.conf=='High'?'hi':r.conf=='Med'?'md':'lo'}">${r.conf||''}</span>`;
+  const rs=res?`<span class="badge ${res.won?'W':'L'}">${res.won?'WON':'LOST'}</span>`:'';
+  const tips=(r.tips||[]).map(t=>`@${t.handle} → ${t.horse}${t.n?` (${t.n} tips, ${pc(t.roi,0)} ROI)`:''}`).join(' · ');
+  const val=r.value&&r.value.horse!=r.horse?`<div class="tip" style="color:var(--up)">Value: ${r.value.horse} $${f(r.value.price)} vs fair $${f(r.value.fair)}</div>`:'';
+  const bias=(D.board.bias||{})[r.meeting];
+  return `<div class="race ${res?'done':''}"><div class="t">${res?hm(r.start):cd(r.start)}<small>${res?'':hm(r.start)}</small></div>
+  <div><div class="meta">${r.meeting} R${r.race} · ${r.state}${r.dist?' · '+r.dist+'m':''}${r.cond?' · '+r.cond:''}</div>
+  <div class="horse">${r.horse} ${ov}${cf}${rs}</div><div class="why">${r.why||''}${res&&!res.won?' · won by '+res.winner+(res.win_price?' $'+f(res.win_price):''):''}</div>${val}${tips?`<div class="tip">${tips}</div>`:''}</div>
+  <div class="px"><b>$${f(r.price??r.taken)}</b><div>fair $${f(r.fair)}</div><div>${f((r.p||0)*100,0)}% chance</div></div></div>`}).join('')}
+function tally(t,ttl){const c=t.ci95;return `<div class="card"><div class="meta">${t.label}</div><div style="display:flex;gap:18px;margin-top:6px;flex-wrap:wrap">
+ <div class="stat"><div class="k">P&amp;L</div><div class="v ${t.pnl>=0?'up':'dn'}">${mo(t.pnl)}</div><div class="s">${t.n} graded · ${t.pending} pending</div></div>
+ <div class="stat"><div class="k">Strike</div><div class="v">${t.strike==null?'–':f(t.strike*100,0)+'%'}</div><div class="s">${t.wins} winners</div></div>
+ <div class="stat"><div class="k">ROI<i class="i" data-t="Profit per $1 staked. The range underneath is the bootstrap 95% range: resample our bets 5,000 times and see where ROI lands. If the range crosses 0, it could be luck.">?</i></div><div class="v ${t.roi>=0?'up':'dn'}">${pc(t.roi)}</div><div class="s">${c?`95%: ${pc(c[0],0)} to ${pc(c[1],0)}`:'need 2+ bets'}</div></div></div></div>`}
+function line(){const S=[[D.baseline.series,'var(--acc)','Nose'],[D.value.series,'var(--up)','Value']];const all=S.flatMap(s=>s[0].map(p=>p[2])).concat([0]);const mx=Math.max(...all),mn=Math.min(...all),N=Math.max(2,...S.map(s=>s[0].length));
+ const y=v=>160-(v-mn)/((mx-mn)||1)*140,x=i=>30+i/(N-1)*560;let g=`<line x1="30" x2="590" y1="${y(0)}" y2="${y(0)}" stroke="#2c3442" stroke-dasharray="3 3"/><text x="0" y="${y(0)+3}">$0</text><text x="0" y="${y(mx)+3}">${mo(mx)}</text>`;
+ S.forEach(([s,c,l],k)=>{if(!s.length)return;g+=`<polyline fill="none" stroke="${c}" stroke-width="2" points="${[[0,0],...s.map((p,i)=>[i+1,p[2]])].map(([i,v])=>x(i*(N-1)/Math.max(s.length,1))+','+y(v)).join(' ')}"/><text x="${40+k*70}" y="176" style="fill:${c}">● ${l}</text>`});$('#pnl').innerHTML=g}
+function proof(){const b=D.baseline,v=D.value,c=D.clv,sp=b.sprt||{};const badge=x=>x=='edge'?'<span class="pill live">EDGE</span>':x=='no edge'?'<span class="pill red">NO EDGE</span>':'<span class="pill">KEEP COLLECTING</span>';
+ const box=(k,val,s,t)=>`<div class="card stat"><div class="k">${k}<i class="i" data-t="${t}">?</i></div><div class="v">${val}</div><div class="s">${s}</div></div>`;
+ $('#proof').innerHTML=box('Bets so far vs needed',`${b.n} / ${b.bets_needed.toLocaleString()}`,`<div class="bar"><i style="width:${Math.min(100,b.n/b.bets_needed*100)}%"></i></div>`,'How many bets it takes to prove a 5% edge isn\'t luck (95% sure, 80% power), given how swingy win bets are.')
+ +box('Verdict test',badge(sp.verdict),`nose ${f(sp.llr,2)} · value ${(v.sprt||{}).verdict}`,'Sequential test (SPRT): keeps score bet by bet and calls EDGE or NO EDGE as soon as the evidence is strong enough. Until then: keep collecting.')
+ +box('Chance profit is real',b.p_pos==null?'–':f(b.p_pos*100,0)+'%','share of resamples above $0','From the bootstrap: in what share of 5,000 reshuffles of our results did we finish in profit.')
+ +box('Beat the closing price',c.beat==null?'–':f(c.beat*100,0)+'%',`${c.n} races checked`,'Share of picks where the price we took was bigger than the final price before the jump. Over 50% = sharp.')}
+function cal(){const C=(D.market||{}).market_cal||[];let g='<line x1="30" y1="200" x2="290" y2="10" stroke="#2c3442"/>';const sx=p=>30+Math.sqrt(p)/Math.sqrt(.8)*260,sy=p=>200-Math.sqrt(p)/Math.sqrt(.8)*190;
+ C.forEach(c=>{g+=`<circle cx="${sx(c.pred)}" cy="${sy(c.act)}" r="${3+Math.log10(c.n)}" fill="${c.act>c.pred?'#2fd18b':'#ff5d6c'}" opacity=".85"><title>${c.bin}: said ${f(c.pred*100,1)}%, won ${f(c.act*100,1)}% (n=${c.n})</title></circle>`});
+ [.05,.2,.5].forEach(p=>{g+=`<text x="${sx(p)-8}" y="215">${p*100}%</text><text x="0" y="${sy(p)+3}">${p*100}%</text>`});$('#cal').innerHTML=g;$('#calsrc').textContent=(D.market||{}).cal_src||'market';
+ const H=(D.market||{}).fav_roi_state||[];$('#heat').innerHTML=`<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px">${H.map(h=>{const a=Math.min(1,Math.abs(h.roi)/.2);return `<div title="n=${h.n}" style="border-radius:8px;padding:8px 6px;text-align:center;background:${h.roi>=0?`rgba(47,209,139,${.12+a*.5})`:`rgba(255,93,108,${.12+a*.5})`}"><b>${h.state}</b><div style="font-size:12px">${pc(h.roi,0)}</div><div style="font-size:10px;color:var(--mut)">n=${h.n}</div></div>`}).join('')}</div>`;
+ const O=D.calibration||[];$('#ourcal').innerHTML=O.length?`<table><tr><th>We said</th><th>n</th><th>Said</th><th>Won</th></tr>${O.map(o=>`<tr><td>${o.bin}</td><td class="n">${o.n}</td><td class="n">${f(o.pred*100,0)}%</td><td class="n ${o.act>=o.pred?'up':'dn'}">${f(o.act*100,0)}%</td></tr>`).join('')}</table>`:'<div class="meta">Builds up as picks get graded.</div>'}
+function clvT(){const c=D.clv,hb=(D.history||{}).clv_bench||{};const hd=`<div style="display:flex;gap:22px;flex-wrap:wrap;margin-bottom:8px"><div class="stat"><div class="k">Beat the close</div><div class="v ${c.beat>.5?'up':''}">${c.beat==null?'–':f(c.beat*100,0)+'%'}</div><div class="s">${c.n} picks checked</div></div><div class="stat"><div class="k">Avg price edge</div><div class="v ${c.mean>0?'up':c.mean<0?'dn':''}">${pc(c.mean)}</div><div class="s">${c.ci95?'95%: '+pc(c.ci95[0])+' to '+pc(c.ci95[1]):'need 2+ picks'}</div></div><div class="stat"><div class="k">Benchmark: favs, 115k races</div><div class="v">${hb.pct_beat_bsp?f(hb.pct_beat_bsp,0)+'%':'–'}</div><div class="s">beat Betfair SP · avg ${hb.mean_clv!=null?pc(hb.mean_clv):'–'}</div></div></div>`;$('#clv').innerHTML=hd+(c.n?`<div class="meta">Close = Ladbrokes final pre-jump price (Betfair SP isn't free live). Same price ${f(c.same*100,0)}%.</div><table><tr><th>Race</th><th>Pick</th><th>Took</th><th>~5 min</th><th>Final</th></tr>${c.rows.slice(-10).reverse().map(r=>`<tr><td>${r.race}</td><td>${r.horse}</td><td class="n">$${f(r.taken)}</td><td class="n">${r.p5?'$'+f(r.p5):'–'}</td><td class="n ${r.taken>r.final?'up':r.taken<r.final?'dn':''}">$${f(r.final)}</td></tr>`).join('')}</table>`:'<div class="meta">Logging starts with the race-day refresh: our price vs the final price before each jump. Over 50% beat rate with a positive average = a real edge.</div>')}
+function tipsT(){const T=D.tipsters.rows||[];$('#tips').innerHTML=`<table><tr><th>Tipster</th><th>Tips</th><th>Strike</th><th>ROI</th><th>Verdict</th></tr>${T.map(t=>`<tr><td>@${t.handle}</td><td class="n">${t.n}</td><td class="n">${f(t.strike_rate*100,0)}%</td><td class="n ${t.roi>=0?'up':'dn'}">${pc(t.roi,0)}</td><td>${t.n<100?'<span class="badge lo">UNPROVEN</span>':''}<span class="badge ${t.verdict=='SILK'?'hi':'md'}">${t.verdict}</span></td></tr>`).join('')}</table><div class="meta" style="margin-top:6px">66 of 71 screened accounts cut: no checkable results. Anyone under ~100 graded tips is unproven.</div>`}
+function hist(){const H=D.history;if(!H||H.status!='ready'){$('#hist').innerHTML='<div class="meta">Pending: the big historical run is still crunching.</div>';return}
+ const m=H.market||{},fb=m.back_fav_bsp_c05||m.back_fav_bsp_c08||{};
+ $('#hist').innerHTML=`<div class="meta">${Object.values(H.sources||{}).map(s=>s.races?s.races.toLocaleString()+' races '+(s.date_min||'').slice(0,4)+'–'+(s.date_max||'').slice(0,4):'').filter(Boolean).join(' · ')}</div>
+ <table style="margin-top:6px"><tr><th>Strategy</th><th>Bets</th><th>ROI</th><th>95% range</th><th>Test</th></tr>${H.top.map(s=>`<tr><td>${s.name.replace(/_/g,' ')}</td><td class="n">${s.n.toLocaleString()}</td><td class="n ${s.roi>=0?'up':'dn'}">${f(s.roi,2)}%</td><td class="n">${f(s.ci95[0],1)} to ${f(s.ci95[1],1)}%</td><td>${s.sprt=='edge'?'<span class="badge W">EDGE</span>':'<span class="badge lo">'+(s.sprt||'')+'</span>'}</td></tr>`).join('')}</table>
+ ${H.key_finding?`<div class="flag" style="color:var(--txt)">Key finding: ${H.key_finding}</div>`:''}<ul class="meta" style="padding-left:16px;margin:8px 0 0">${H.verdict.map(v=>`<li>${v}</li>`).join('')}</ul>`}
+function flags(){const B=(D.board||{}).bias||{};const fl=Object.entries(B).filter(([m,b])=>b.flag);$('#flags').innerHTML=fl.map(([m,b])=>`<div class="flag">⚑ Track bias at ${m}: ${b.flag} (after ${b.n} races)</div>`).join('')}
+function render(){races();flags();$('#tallies').innerHTML=tally(D.baseline)+tally(D.value);line();proof();cal();clvT();tipsT();hist();
+ const age=Date.now()/1000-D.generated;$('#live').textContent=age<900?'LIVE · '+D.generated_local.split(' ').slice(-2).join(' '):'updated '+D.generated_local;$('#live').className='pill '+(age<900?'live':'');
+ $('#foot').innerHTML=`Report-only. Imaginary $100 bets, nothing is ever placed. Prices: Ladbrokes fixed odds (final pre-jump price used as the close; Betfair SP not free live). Model: Benter-style blend of form model and market. Fair = 1 / our win chance. Overlay needs price ≥ 5% above fair after an 8% commission haircut. Updated ${D.generated_local}.`}
+async function load(){try{const r=await fetch('racing.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)throw r.status;D=await r.json();$('#err').innerHTML='';render()}catch(e){$('#err').innerHTML=`<div class="flag">Couldn't load fresh data (${e}). Showing last copy.</div>`}}
+load();setInterval(load,45000);setInterval(()=>D&&races(),20000);
+</script></body></html>
