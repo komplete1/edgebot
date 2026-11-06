@@ -1,0 +1,32 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="icon" href="data:,">
+<title>Experiments · Nose Tracker</title><meta name="theme-color" content="#0b0d12">
+<style>
+:root{--bg:#0b0d12;--card:#141821;--line:#232a36;--txt:#e8ecf3;--mut:#8b95a7;--up:#2fd18b;--dn:#ff5d6c;--acc:#7aa2ff;--gold:#ffc857}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--txt);font:15px/1.45 -apple-system,BlinkMacSystemFont,"Inter","Segoe UI",Roboto,sans-serif}
+.wrap{max-width:980px;margin:0 auto;padding:14px}h1{font-size:20px;margin:0}h1 span{color:var(--acc)}
+.tabs{display:flex;gap:6px;margin:12px 0 14px}.tabs a{color:var(--mut);text-decoration:none;border:1px solid var(--line);border-radius:99px;padding:6px 13px;font-size:13px}.tabs a.a{color:var(--txt);border-color:var(--acc)}
+.intro{color:var(--mut);font-size:14px;margin-bottom:12px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px}
+.c{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:13px 14px}.c h3{margin:0 0 4px;font-size:16px}.q{color:var(--mut);font-size:13px}
+.a{margin:8px 0;font-size:14.5px}.b{display:inline-block;font-size:11.5px;font-weight:700;padding:3px 9px;border-radius:99px}.P{background:#123a2a;color:var(--up)}.N{background:#262a33;color:var(--mut)}.M{background:#2a2a1c;color:var(--gold)}
+.meta{color:var(--mut);font-size:12px}details{margin-top:8px}summary{cursor:pointer;color:var(--mut);font-size:12.5px}pre{white-space:pre-wrap;font-size:11px;color:var(--mut);max-height:240px;overflow:auto}
+svg text{fill:var(--mut);font-size:10px}
+</style></head><body><div class="wrap">
+<h1>Nose <span>Tracker</span></h1>
+<div class="tabs"><a href="racing.html">Today's picks</a><a class="a" href="experiments.html">Experiments</a></div>
+<div class="intro">The bot tests betting ideas against years of real results. Green = worth chasing. Grey = the bookies already price it in. Yellow = not enough data yet. All money is imaginary.</div>
+<div id="err"></div><div class="grid" id="g"></div><div class="meta" id="ft" style="margin:20px 0"></div>
+</div><script>
+const $=s=>document.querySelector(s);const V={'Promising':'P','Nothing there':'N','Needs more data':'M'};
+const esc=s=>String(s??'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'})[c]);
+function chart(c){if(!c||!c.values||!c.values.length)return'';const v=c.values.map(Number),mx=Math.max(1,...v.map(Math.abs)),W=300,bh=16,H=v.length*(bh+4)+14,z=150;
+ let g=`<line x1="${z}" x2="${z}" y1="0" y2="${H-12}" stroke="#2c3442"/>`;v.forEach((x,i)=>{const w=Math.abs(x)/mx*130,y=i*(bh+4);g+=`<rect x="${x>=0?z:z-w}" y="${y}" width="${Math.max(w,1)}" height="${bh}" rx="3" fill="${x>=0?'#2fd18b':'#ff5d6c'}" opacity=".8"/><text x="${x>=0?z-4:z+4}" y="${y+12}" text-anchor="${x>=0?'end':'start'}">${esc(c.labels[i])}</text><text x="${x>=0?z+w+3:z-w-3}" y="${y+12}" text-anchor="${x>=0?'start':'end'}" style="fill:var(--txt)">${x>0?'+':''}${x}</text>`});
+ return `<svg viewBox="0 0 ${W} ${H}" width="100%">${g}<text x="${z}" y="${H-1}" text-anchor="middle">${esc(c.unit||'')}</text></svg>`}
+async function load(){try{const r=await fetch('experiments.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)throw r.status;const D=await r.json();
+ $('#g').innerHTML=(D.cards||[]).map(c=>`<div class="c"><span class="b ${V[c.verdict]||'M'}">${esc(c.verdict)}</span><h3 style="margin-top:6px">${esc(c.title)}</h3><div class="q">${esc(c.question)}</div>
+ <div class="a">${esc(c.answer)}</div>${chart(c.chart)}<div class="meta">${(c.n||0).toLocaleString()} ${c.n==1?'item':'runners/bets'} · ${esc(c.data||'')}</div>
+ <details><summary>Nerd detail</summary><pre>${esc(JSON.stringify({note:c.note,detail:c.detail,error:c.last_error},null,1))}</pre></details></div>`).join('')||'<div class="c">No experiments yet.</div>';
+ $('#ft').textContent='Updated '+new Date(D.generated*1000).toLocaleString('en-AU',{timeZone:'Australia/Melbourne'})+'. "$ per $100" = average profit or loss per $100 bet after Betfair commission.';$('#err').innerHTML=''}
+ catch(e){$('#err').innerHTML='<div class="c">Could not load experiments ('+esc(e)+').</div>'}}
+load();setInterval(load,300000);
+</script></body></html>
