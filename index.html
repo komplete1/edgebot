@@ -29,6 +29,10 @@ table{width:100%;border-collapse:collapse;font-size:12px}td,th{padding:6px;borde
 <section class="card s4"><h2>Paper bot</h2><div class="big" id="bal">–</div><div id="pst" class="live"></div><canvas id="eq" height="90" style="width:100%;margin-top:10px"></canvas>
 <h2 style="margin-top:16px">Track record</h2><div id="cal"></div><h2 style="margin-top:16px">Fear &amp; Greed</h2><div class="big" id="fng">–</div></section>
 <section class="card s12"><h2>Racing odds heatmap · today <span id="rdate"></span></h2><div id="heat"></div></section>
+<section class="card s12"><h2>$100 win tally · imaginary · main meetings</h2>
+<div id="puntkv" class="tick"></div>
+<div style="max-height:360px;overflow:auto;margin-top:10px"><table id="puntt"><thead><tr><th>Date</th><th>Meeting</th><th>R</th><th>Horse</th><th>Price</th><th>Result</th><th>P&amp;L</th><th>Why</th></tr></thead><tbody></tbody></table></div>
+</section>
 <section class="card s6"><h2>Crypto rule state</h2><div id="rules"></div></section>
 <section class="card s6"><h2>Edge ledger</h2><div id="ledger" style="max-height:520px;overflow:auto"></div></section>
 </main><footer>Prices: Hyperliquid public API, client-side, every 3s · Stats: <span id="upd"></span> · Not advice, no bets placed</footer>
@@ -57,6 +61,10 @@ const R=D.racing||{};document.getElementById('rdate').textContent=R.date||'';let
 document.getElementById('heat').innerHTML=H||'<div class="live">No meetings in latest push.</div>';
 const ru=D.rules||{};let rh='<table><tr><th>Coin</th><th>Px</th><th>Trend</th><th>OI 24h</th><th>Fund/yr</th></tr>';Object.entries(ru.snap||{}).forEach(([k,v])=>rh+=`<tr><td><b>${k}</b></td><td>${f(v.px,dp(v.px))}</td><td class="${v.trend=='bull'?'up':'dn'}">${v.trend||'–'}</td><td>${f(v.oi24,1)}%</td><td>${f(v.fund_ann,1)}%</td></tr>`);rh+='</table><h2 style="margin-top:14px">Rules</h2><table>';
 Object.entries(ru.rules||{}).forEach(([k,v])=>rh+=`<tr><td>${k}</td><td class="${/kill/i.test(v.status)?'k':/live|active/i.test(v.status)?'ok':'w'}">${v.status||''}</td><td>${v.side||''} ${v.h||''}</td></tr>`);document.getElementById('rules').innerHTML=rh+'</table>'+((ru.fired||[]).length?'<p class="ok">FIRED: '+ru.fired.join(', ')+'</p>':'<p class="live">No rules firing.</p>');
+const PT=s.punt||D.punt||{}; const pk=document.getElementById('puntkv');
+if(pk){const g=PT.summary||{}; pk.innerHTML=`<div class="tk"><b>Staked</b><div class="px">$${f(g.staked||0,0)}</div></div><div class="tk"><b>Returned</b><div class="px">$${f(g.returned||0,0)}</div></div><div class="tk"><b>P&L</b><div class="px ${(g.pnl||0)>=0?'up':'dn'}">${(g.pnl||0)>=0?'+':''}${f(g.pnl||0,0)}</div></div><div class="tk"><b>Strike</b><div class="px">${g.strike==null?'–':f(g.strike*100,0)+'%'}</div><div class="live">${g.graded||0} graded / ${g.n||0} picks</div></div><div class="tk"><b>ROI</b><div class="px ${(g.roi||0)>=0?'up':'dn'}">${g.roi==null?'–':f((g.roi||0)*100,1)+'%'}</div></div>`;}
+const tb=document.querySelector('#puntt tbody');
+if(tb){tb.innerHTML=(PT.rows||[]).slice().reverse().slice(0,40).map(r=>`<tr><td>${r.date||''}</td><td>${r.meeting||''}</td><td>R${r.race||''}</td><td><b>${r.horse||''}</b></td><td>$${r.price||''}</td><td class="${r.result==='W'?'ok':r.result==='L'?'k':'w'}">${r.result||'pending'}</td><td class="${(+r.pnl||0)>=0?'up':'dn'}">${r.pnl===''||r.pnl==null?'–':((+r.pnl>=0?'+':'')+f(+r.pnl,0))}</td><td class="live">${(r.why||'').slice(0,60)}</td></tr>`).join('')||'<tr><td colspan="8" class="live">No picks yet</td></tr>');}
 let lh='<table><tr><th>Edge</th><th>Verdict</th></tr>';(s.ledger||[]).slice().reverse().forEach(e=>lh+=`<tr><td><span class="tag">${e.domain}</span> ${e.edge}<div class="live">${e.result||''}</div></td><td class="${/kill/i.test(e.verdict)?'k':/watch/i.test(e.verdict)?'w':'ok'}">${e.verdict||''}</td></tr>`);document.getElementById('ledger').innerHTML=lh+'</table>'}
 async function data(){try{render(await (await fetch('data.json?'+Date.now())).json())}catch(e){}}
 document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('on'));b.classList.add('on');iv=b.dataset.i;loadCandles()});
