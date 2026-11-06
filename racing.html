@@ -30,12 +30,23 @@ table{width:100%;border-collapse:collapse;font-size:13px}td,th{padding:6px 4px;b
 svg text{fill:var(--mut);font-size:10px}.foot{color:var(--mut);font-size:11.5px;margin:26px 0 30px;line-height:1.5}
 .seg{display:flex;gap:6px;margin:0 0 8px}.seg button{background:var(--card);border:1px solid var(--line);color:var(--mut);border-radius:99px;padding:5px 11px;font-size:12px}.seg button.a{color:var(--txt);border-color:var(--acc)}
 .flag{font-size:12px;color:var(--gold);padding:6px 0}
+.big3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:6px 0 10px}.big3>div{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;text-align:center}.big3 .k{color:var(--mut);font-size:12px}.bv{font-size:26px;font-weight:800;font-variant-numeric:tabular-nums;margin-top:2px}
+.verdict{font-size:15px;margin:4px 2px 14px;line-height:1.45}
+.rc{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:8px}.rc .top{display:flex;justify-content:space-between;color:var(--mut);font-size:12.5px}
+.rc .pick{display:flex;justify-content:space-between;align-items:baseline;margin:6px 0 2px}.rc .nm{font-size:22px;font-weight:800;letter-spacing:-.3px}.rc .pr{font-size:22px;font-weight:700;font-variant-numeric:tabular-nums}
+.cf{display:inline-block;font-size:12px;font-weight:700;padding:3px 9px;border-radius:99px;margin-right:6px}.c1{background:#123a2a;color:var(--up)}.c2{background:#1c2a4d;color:var(--acc)}.c3{background:#2a2a1c;color:var(--gold)}.c4{background:#262a33;color:var(--mut)}
+.rs{margin-top:8px;font-weight:800;font-size:16px}.rc.done{opacity:.8}
+details.nerd{margin-top:28px;border-top:1px solid var(--line);padding-top:10px}details.nerd summary{cursor:pointer;color:var(--mut);font-size:14px;padding:8px 0}
 </style></head><body><div class="wrap">
 <header><h1>Nose <span>Tracker</span></h1><div><span class="pill gold">IMAGINARY $100 · NO REAL BETS</span> <span id="live" class="pill">loading</span><nav style="display:inline"><a href="https://komplete1.github.io/edgebot/">Crypto dash</a></nav></div></header>
 <div id="err"></div>
-<h2>Races <span id="bdate"></span><i class="i" data-t="Every main-meeting race in Australia. Our pick to win (the nose), current price, and the fair price our model thinks it should be. Overlay = the price is at least 5% better than fair even after an 8% commission haircut.">?</i></h2>
-<div class="seg" id="seg"><button data-f="up" class="a">Upcoming</button><button data-f="all">All</button><button data-f="ov">Overlays</button><button data-f="done">Results</button></div>
-<div id="flags"></div><div class="card" style="padding:0" id="races"></div>
+<div class="big3"><div><div class="k">Today</div><div class="bv" id="b_today">–</div></div><div><div class="k">All time</div><div class="bv" id="b_all">–</div></div><div><div class="k">Win rate</div><div class="bv" id="b_wr">–</div></div></div>
+<div class="verdict" id="verdict">Loading…</div>
+<div class="seg" id="seg"><button data-f="up" class="a">Coming up</button><button data-f="done">Results</button><button data-f="ov">Value bets</button><button data-f="all">All</button></div>
+<div class="seg" id="cseg"></div>
+<div id="flags"></div><div id="races"></div>
+<div class="meta" style="margin-top:10px">Every pick is an imaginary $100 bet to win. Nothing real is ever placed.</div>
+<details class="nerd"><summary>Nerd stats (for the experts)</summary>
 <h2>Headline edge test: do we beat the closing price?<i class="i" data-t="Closing line value: did we take a better price than the final price just before the jump? Beating the close consistently is the fastest proof of a real edge, way faster than profit.">?</i></h2><div class="card" id="clv"></div>
 <h2>Scoreboard<i class="i" data-t="Two separate imaginary tallies. Nose: $100 on our pick in every race. Value: $100 only when a horse's price beats our fair odds.">?</i></h2>
 <div class="two" id="tallies"></div>
@@ -46,28 +57,38 @@ svg text{fill:var(--mut);font-size:10px}.foot{color:var(--mut);font-size:11.5px;
 <div class="card"><div class="k meta">Fav ROI by state<i class="i" data-t="Return from backing the favourite in every race, split by state. Green = made money historically. Sample sizes are small, so treat as noise until n>1000.">?</i></div><div id="heat" style="margin-top:8px"></div><div class="k meta" style="margin-top:12px">Our picks: predicted vs actual<i class="i" data-t="Our own picks grouped by how likely we said they were to win, vs how often they actually won.">?</i></div><div id="ourcal"></div></div></div>
 <h2>X tipsters, graded<i class="i" data-t="Only tipsters who post checkable tips. Every tip graded against official results at $100 level stakes. Small samples = not proven.">?</i></h2><div class="card" id="tips"></div>
 <h2>5-year history test<i class="i" data-t="Every strategy tested on ~114,000 Aussie races (2020–2026, Betfair data) after commission. Bootstrap 95% range: if the whole range is above 0, it's a real edge.">?</i></h2><div class="card" id="hist"></div>
+</details>
 <div class="foot" id="foot"></div>
 </div>
 <script>
 const $=s=>document.querySelector(s),f=(x,d=2)=>x==null||isNaN(x)?'–':(+x).toFixed(d),pc=(x,d=1)=>x==null?'–':((x>0?'+':'')+(x*100).toFixed(d)+'%'),mo=x=>x==null?'–':(x<0?'-$':'+$')+Math.abs(x).toLocaleString(undefined,{maximumFractionDigits:0});
 let D=null,F='up';
-document.addEventListener('click',e=>{if(e.target.classList.contains('i')){e.target.classList.toggle('on')}if(e.target.dataset.f){F=e.target.dataset.f;document.querySelectorAll('#seg button').forEach(b=>b.classList.toggle('a',b.dataset.f==F));races()}});
+document.addEventListener('click',e=>{if(e.target.classList.contains('i')){e.target.classList.toggle('on')}if(e.target.dataset.c){C=e.target.dataset.c;races()}if(e.target.dataset.f){F=e.target.dataset.f;document.querySelectorAll('#seg button').forEach(b=>b.classList.toggle('a',b.dataset.f==F));races()}});
 function cd(s){if(!s)return'';const d=s-Date.now()/1000;if(d<-60)return'jumped';if(d<60)return'now';const m=Math.round(d/60);return m<60?m+'m':Math.floor(m/60)+'h '+(m%60)+'m'}
 function hm(s){return s?new Date(s*1000).toLocaleTimeString('en-AU',{hour:'numeric',minute:'2-digit',timeZone:'Australia/Melbourne'}):''}
+const FLAG={AU:'🇦🇺',HK:'🇭🇰',GB:'🇬🇧',UK:'🇬🇧',IE:'🇮🇪',US:'🇺🇸',JP:'🇯🇵',FR:'🇫🇷',NZ:'🇳🇿',SG:'🇸🇬',ZA:'🇿🇦',AE:'🇦🇪',CA:'🇨🇦'};let C='all';
+const ctry=r=>r.country||'AU';
+function plain(w){if(!w)return'';const M=[[/market fav/,'Favourite in the betting'],[/form over fav ([^;]+)/,'Form says it beats the favourite $1'],[/jock\+/,'good jockey'],[/jock-/,'jockey not flash'],[/trainer\+/,'trainer in form'],[/trainer-/,'trainer cold'],[/J\+T combo\+/,'jockey-trainer combo wins'],[/barrier\+/,'good barrier'],[/barrier-/,'tough barrier'],[/last start\+/,'ran well last start'],[/last start-/,'ran poorly last start'],[/last margin\+/,'close finish last time'],[/last margin-/,'beaten a long way last time'],[/last-3 form\+/,'in form'],[/last-3 form-/,'patchy form'],[/fit \(<=35d\)\+/,'raced recently'],[/fit \(<=35d\)-/,'raced recently'],[/first-up[+-]?/,'first run back from a break'],[/weight chg[+-]/,'weight change'],[/class\(last SP\)[+-]/,'class move'],[/distance rec\+/,'likes the distance'],[/distance rec-/,'unproven at the distance'],[/track rec\+/,'likes this track'],[/track rec-/,'poor record here'],[/firmed ([\d.]+)->([\d.]+)/,'money coming in ($$$1 to $$$2)'],[/move ([\d.]+)->([\d.]+)/,'money coming in ($$$1 to $$$2)'],[/unraced\/import: market only/,'unraced, going off the betting'],[/flb x[\d.]+/,''],[/suits? [^;,]*/,'suits the track'],[/plunge[^;]*/,'big plunge']];
+ let t=w;M.forEach(([a,b])=>t=t.replace(a,b));t=t.split(/[;,]/).map(x=>x.trim()).filter(x=>x&&!/[+-]$/.test(x));t=[...new Set(t)].slice(0,3).join(', ');return t.charAt(0).toUpperCase()+t.slice(1)}
+function conf(r){if(r.overlay&&r.conf=='High')return['Strong bet','c1'];if(r.conf=='High'||r.overlay)return['Decent','c2'];if(r.conf=='Med')return['Just a guess','c3'];return['Skip (long shot pick)','c4']}
+function pnlOf(r){if(!r.result)return null;const p=r.taken||r.price||0;return r.result.won?Math.round((p-1)*100):-100}
 function races(){const B=D.board||{};let R=(B.races||[]);const now=Date.now()/1000;
- if(F=='up')R=R.filter(r=>!r.result&&(!r.start||r.start>now-120));if(F=='ov')R=R.filter(r=>r.overlay||r.value);if(F=='done')R=R.filter(r=>r.result);
- $('#bdate').textContent=B.date?'· '+new Date(B.date+'T12:00:00').toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'short'}):'';
- if(!R.length){$('#races').innerHTML=`<div class="race"><div></div><div class="meta">${(B.races||[]).length?'Nothing here. Try All.':'No card loaded yet. Picks land around 7:30am.'}</div><div></div></div>`;return}
- $('#races').innerHTML=R.map(r=>{const res=r.result;const ov=r.overlay?`<span class="badge ov" title="Price beats fair odds after commission">OVERLAY ${pc(r.overlay_pct,0)}</span>`:'';
-  const cf=`<span class="badge ${r.conf=='High'?'hi':r.conf=='Med'?'md':'lo'}">${r.conf||''}</span>`;
-  const rs=res?`<span class="badge ${res.won?'W':'L'}">${res.won?'WON':'LOST'}</span>`:'';
-  const tips=(r.tips||[]).map(t=>`@${t.handle} → ${t.horse}${t.n?` (${t.n} tips, ${pc(t.roi,0)} ROI)`:''}`).join(' · ');
-  const val=r.value&&r.value.horse!=r.horse?`<div class="tip" style="color:var(--up)">Value: ${r.value.horse} $${f(r.value.price)} vs fair $${f(r.value.fair)}</div>`:'';
-  const bias=(D.board.bias||{})[r.meeting];
-  return `<div class="race ${res?'done':''}"><div class="t">${res?hm(r.start):cd(r.start)}<small>${res?'':hm(r.start)}</small></div>
-  <div><div class="meta">${r.meeting} R${r.race} · ${r.state}${r.dist?' · '+r.dist+'m':''}${r.cond?' · '+r.cond:''}</div>
-  <div class="horse">${r.horse} ${ov}${cf}${rs}</div><div class="why">${r.why||''}${res&&!res.won?' · won by '+res.winner+(res.win_price?' $'+f(res.win_price):''):''}</div>${val}${tips?`<div class="tip">${tips}</div>`:''}</div>
-  <div class="px"><b>$${f(r.price??r.taken)}</b><div>fair $${f(r.fair)}</div><div>${f((r.p||0)*100,0)}% chance</div></div></div>`}).join('')}
+ const cs=[...new Set(R.map(ctry))];$('#cseg').innerHTML=cs.length>1?['all',...cs].map(c=>`<button data-c="${c}" class="${C==c?'a':''}">${c=='all'?'All countries':(FLAG[c]||'')+' '+c}</button>`).join(''):'';
+ if(C!='all')R=R.filter(r=>ctry(r)==C);
+ if(F=='up')R=R.filter(r=>!r.result&&(!r.start||r.start>now-120));if(F=='ov')R=R.filter(r=>r.overlay||r.value);if(F=='done')R=R.filter(r=>r.result).reverse();
+ if(!R.length){$('#races').innerHTML=`<div class="rc"><div class="meta">${(B.races||[]).length?(F=='up'?'No more races today. Check Results.':'Nothing here.'):'No picks loaded yet. They land in the morning.'}</div></div>`;return}
+ $('#races').innerHTML=R.map(r=>{const [cl,cc]=conf(r);const pl=pnlOf(r);const res=r.result;
+  const val=r.value&&r.value.horse!=r.horse?`<div class="meta" style="margin-top:4px;color:var(--up)">Value bet: ${r.value.horse} at $${f(r.value.price)}, price is better than it should be</div>`:'';
+  const vb=r.overlay?`<span class="cf c1">Value bet</span>`:'';
+  return `<div class="rc ${res?'done':''}"><div class="top"><span>${FLAG[ctry(r)]||''} ${r.meeting} · Race ${r.race}</span><span>${res?hm(r.start):(cd(r.start)=='jumped'?'running':cd(r.start)+' · '+hm(r.start))}</span></div>
+  <div class="pick"><span class="nm">${r.horse}</span><span class="pr">$${f(r.taken||r.price)}</span></div>
+  <div><span class="cf ${cc}">${cl}</span>${vb}<span class="meta">${plain(r.why)}</span></div>${val}
+  ${res?`<div class="rs ${res.won?'up':'dn'}">${res.won?'WON':'LOST'} ${pl>=0?'+':'-'}$${Math.abs(pl)}${res.won?'':` <span class="meta" style="font-weight:400">· won by ${res.winner}</span>`}</div>`:''}</div>`}).join('')}
+function top3(){const B=(D.board||{}).races||[];const done=B.filter(r=>r.result);const td=done.reduce((a,r)=>a+pnlOf(r),0);const b=D.baseline;
+ const m=x=>(x>=0?'+$':'-$')+Math.abs(Math.round(x)).toLocaleString();
+ $('#b_today').innerHTML=done.length?`<span class="${td>=0?'up':'dn'}">${m(td)}</span>`:'–';$('#b_all').innerHTML=`<span class="${b.pnl>=0?'up':'dn'}">${m(b.pnl)}</span>`;$('#b_wr').textContent=b.strike==null?'–':Math.round(b.strike*100)+'%';
+ const need=Math.max(0,b.bets_needed-b.n);
+ $('#verdict').innerHTML=`${done.length?(td>=0?'Up ':'Down ')+m(Math.abs(td)).replace(/^[+-]/,'')+' today':'No results yet today'}. ${b.n} bets so far, ${b.wins} winners. Too early to know if this is skill or luck: need about ${need.toLocaleString()} more bets.`}
 function tally(t,ttl){const c=t.ci95;return `<div class="card"><div class="meta">${t.label}</div><div style="display:flex;gap:18px;margin-top:6px;flex-wrap:wrap">
  <div class="stat"><div class="k">P&amp;L</div><div class="v ${t.pnl>=0?'up':'dn'}">${mo(t.pnl)}</div><div class="s">${t.n} graded · ${t.pending} pending</div></div>
  <div class="stat"><div class="k">Strike</div><div class="v">${t.strike==null?'–':f(t.strike*100,0)+'%'}</div><div class="s">${t.wins} winners</div></div>
@@ -94,9 +115,9 @@ function hist(){const H=D.history;if(!H||H.status!='ready'){$('#hist').innerHTML
  <table style="margin-top:6px"><tr><th>Strategy</th><th>Bets</th><th>ROI</th><th>95% range</th><th>Test</th></tr>${H.top.map(s=>`<tr><td>${s.name.replace(/_/g,' ')}</td><td class="n">${s.n.toLocaleString()}</td><td class="n ${s.roi>=0?'up':'dn'}">${f(s.roi,2)}%</td><td class="n">${f(s.ci95[0],1)} to ${f(s.ci95[1],1)}%</td><td>${s.sprt=='edge'?'<span class="badge W">EDGE</span>':'<span class="badge lo">'+(s.sprt||'')+'</span>'}</td></tr>`).join('')}</table>
  ${H.key_finding?`<div class="flag" style="color:var(--txt)">Key finding: ${H.key_finding}</div>`:''}<ul class="meta" style="padding-left:16px;margin:8px 0 0">${H.verdict.map(v=>`<li>${v}</li>`).join('')}</ul>`}
 function flags(){const B=(D.board||{}).bias||{};const fl=Object.entries(B).filter(([m,b])=>b.flag);$('#flags').innerHTML=fl.map(([m,b])=>`<div class="flag">⚑ Track bias at ${m}: ${b.flag} (after ${b.n} races)</div>`).join('')}
-function render(){races();flags();$('#tallies').innerHTML=tally(D.baseline)+tally(D.value);line();proof();cal();clvT();tipsT();hist();
+function render(){top3();races();flags();$('#tallies').innerHTML=tally(D.baseline)+tally(D.value);line();proof();cal();clvT();tipsT();hist();
  const age=Date.now()/1000-D.generated;$('#live').textContent=age<900?'LIVE · '+D.generated_local.split(' ').slice(-2).join(' '):'updated '+D.generated_local;$('#live').className='pill '+(age<900?'live':'');
- $('#foot').innerHTML=`Report-only. Imaginary $100 bets, nothing is ever placed. Prices: Ladbrokes fixed odds (final pre-jump price used as the close; Betfair SP not free live). Model: Benter-style blend of form model and market. Fair = 1 / our win chance. Overlay needs price ≥ 5% above fair after an 8% commission haircut. Updated ${D.generated_local}.`}
+ $('#foot').innerHTML=`Updated ${D.generated_local}. Prices from Ladbrokes. Imaginary money only.`}
 async function load(){try{let r;try{r=await fetch('racing.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)throw 0;D=await r.json()}catch(_){}const G='https://komplete1.github.io/edgebot/racing.json?t='+Date.now();if(location.hostname.indexOf('github.io')<0){try{const g=await fetch(G,{cache:'no-store'});if(g.ok){const j=await g.json();if(!D||j.generated>D.generated)D=j}}catch(_){}}if(!D)throw 'no data';$('#err').innerHTML='';render()}catch(e){$('#err').innerHTML=`<div class="flag">Couldn't load fresh data (${e}). Showing last copy.</div>`}}
 load();setInterval(load,45000);setInterval(()=>D&&races(),20000);
 </script></body></html>
